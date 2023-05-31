@@ -33,6 +33,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -90,7 +91,19 @@ static struct llist *ll_buffers = 0;
 static int llbuf_num = DEFAULT_MAX_NUM_BUFFERS;
 
 static volatile int do_exit = 0;
+static int enable_quiet = 0;
 
+static void debug(const char *fmt, ...) {
+
+	va_list list;
+	
+	if (enable_quiet)
+		return;	
+
+	va_start(list, fmt);
+	printf(fmt);
+	va_end(list);
+}
 
 void usage(void)
 {
@@ -105,6 +118,7 @@ void usage(void)
 	printf("\t[-d device index (default: 0)]\n");
 	printf("\t[-P ppm_error (default: 0)]\n");
 	printf("\t[-T enable bias-T on GPIO PIN 0 (works for rtl-sdr.com v3 dongles)]\n");
+	printf("\t[-q quiet mode]\n");
 	exit(1);
 }
 
@@ -313,60 +327,60 @@ static void *command_worker(void *arg)
 		}
 		switch(cmd.cmd) {
 		case 0x01:
-			printf("set freq %d\n", ntohl(cmd.param));
+			debug("set freq %d\n", ntohl(cmd.param));
 			rtlsdr_set_center_freq(dev,ntohl(cmd.param));
 			break;
 		case 0x02:
-			printf("set sample rate %d\n", ntohl(cmd.param));
+			debug("set sample rate %d\n", ntohl(cmd.param));
 			rtlsdr_set_sample_rate(dev, ntohl(cmd.param));
 			break;
 		case 0x03:
-			printf("set gain mode %d\n", ntohl(cmd.param));
+			debug("set gain mode %d\n", ntohl(cmd.param));
 			rtlsdr_set_tuner_gain_mode(dev, ntohl(cmd.param));
 			break;
 		case 0x04:
-			printf("set gain %d\n", ntohl(cmd.param));
+			debug("set gain %d\n", ntohl(cmd.param));
 			rtlsdr_set_tuner_gain(dev, ntohl(cmd.param));
 			break;
 		case 0x05:
-			printf("set freq correction %d\n", ntohl(cmd.param));
+			debug("set freq correction %d\n", ntohl(cmd.param));
 			rtlsdr_set_freq_correction(dev, ntohl(cmd.param));
 			break;
 		case 0x06:
 			tmp = ntohl(cmd.param);
-			printf("set if stage %d gain %d\n", tmp >> 16, (short)(tmp & 0xffff));
+			debug("set if stage %d gain %d\n", tmp >> 16, (short)(tmp & 0xffff));
 			rtlsdr_set_tuner_if_gain(dev, tmp >> 16, (short)(tmp & 0xffff));
 			break;
 		case 0x07:
-			printf("set test mode %d\n", ntohl(cmd.param));
+			debug("set test mode %d\n", ntohl(cmd.param));
 			rtlsdr_set_testmode(dev, ntohl(cmd.param));
 			break;
 		case 0x08:
-			printf("set agc mode %d\n", ntohl(cmd.param));
+			debug("set agc mode %d\n", ntohl(cmd.param));
 			rtlsdr_set_agc_mode(dev, ntohl(cmd.param));
 			break;
 		case 0x09:
-			printf("set direct sampling %d\n", ntohl(cmd.param));
+			debug("set direct sampling %d\n", ntohl(cmd.param));
 			rtlsdr_set_direct_sampling(dev, ntohl(cmd.param));
 			break;
 		case 0x0a:
-			printf("set offset tuning %d\n", ntohl(cmd.param));
+			debug("set offset tuning %d\n", ntohl(cmd.param));
 			rtlsdr_set_offset_tuning(dev, ntohl(cmd.param));
 			break;
 		case 0x0b:
-			printf("set rtl xtal %d\n", ntohl(cmd.param));
+			debug("set rtl xtal %d\n", ntohl(cmd.param));
 			rtlsdr_set_xtal_freq(dev, ntohl(cmd.param), 0);
 			break;
 		case 0x0c:
-			printf("set tuner xtal %d\n", ntohl(cmd.param));
+			debug("set tuner xtal %d\n", ntohl(cmd.param));
 			rtlsdr_set_xtal_freq(dev, 0, ntohl(cmd.param));
 			break;
 		case 0x0d:
-			printf("set tuner gain by index %d\n", ntohl(cmd.param));
+			debug("set tuner gain by index %d\n", ntohl(cmd.param));
 			set_gain_by_index(dev, ntohl(cmd.param));
 			break;
 		case 0x0e:
-			printf("set bias tee %d\n", ntohl(cmd.param));
+			debug("set bias tee %d\n", ntohl(cmd.param));
 			rtlsdr_set_bias_tee(dev, (int)ntohl(cmd.param));
 			break;
 		default:
@@ -413,7 +427,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact, sigign;
 #endif
 
-	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:n:d:P:T")) != -1) {
+	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:n:d:P:T:q")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
@@ -445,6 +459,9 @@ int main(int argc, char **argv)
 			break;
 		case 'T':
 			enable_biastee = 1;
+			break;
+		case 'q':
+			enable_quiet = 1;
 			break;
 		default:
 			usage();
