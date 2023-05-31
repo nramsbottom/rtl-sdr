@@ -1,6 +1,12 @@
-rtl-sdr
+# rtl-sdr
 turns your Realtek RTL2832 based DVB dongle into a SDR receiver
 ======================================================================
 
 For more information see:
 https://osmocom.org/projects/rtl-sdr/wiki
+
+
+## Neil Ramsbottom
+This is a fork of the original code hosted at https://gitea.osmocom.org/sdr/rtl-sdr.git
+
+It adds an option to squelch a lot of the output in the packet handling code, which seems to cause latency to clients.
